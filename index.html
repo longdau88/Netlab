@@ -19,7 +19,7 @@ header input.title{background:#1b3d60;border:1px solid #2c5880;color:#fff;border
 .tb button:hover{background:#265482}
 .tb button.on{background:#3aa0ff;border-color:#3aa0ff;color:#fff}
 .tb select{padding:4px 4px}
-.mob-btn-menu{display:none}
+.mob-btn-menu,.mob-header-actions{display:none}
 aside.pal{background:var(--panel);border-right:1px solid var(--line);overflow:auto;padding:8px}
 .pal h4{margin:10px 2px 6px;font-size:11px;text-transform:uppercase;color:var(--muted);letter-spacing:.5px}
 .pal-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
@@ -172,10 +172,15 @@ main,#cv,#cv *{touch-action:none}
  header{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding:5px 8px;gap:5px;flex:none;z-index:20}
  header::-webkit-scrollbar{display:none}
  header .logo{font-size:14px;margin-right:2px}
- header input.title{min-width:120px;max-width:170px;flex:none;font-size:13px}
+ header input.title{min-width:85px;max-width:130px;flex:none;font-size:12.5px;padding:3px 6px}
  .tb{padding:0 3px;flex:none}
  .tb button,.tb select{padding:4px 7px;font-size:11.5px;min-height:30px}
- .mob-btn-menu{display:flex!important;align-items:center;justify-content:center;background:#1b3d60;border:1px solid #2c5880;color:#fff;border-radius:6px;width:30px;height:30px;font-size:16px;cursor:pointer;flex:none;margin-left:auto}
+ .mob-header-actions{display:flex!important;align-items:center;gap:3px;margin-left:auto;margin-right:2px;flex:none}
+ .mob-hdr-btn{background:#1b3d60;border:1px solid #2c5880;color:#fff;border-radius:6px;padding:3px 7px;font-size:11.5px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:3px;height:30px;touch-action:manipulation;white-space:nowrap}
+ .mob-hdr-btn:active{background:#265482}
+ .mob-hdr-btn.pri{background:#0b5ea8;border-color:#3aa0ff;color:#fff;box-shadow:0 0 8px rgba(58,160,255,0.35)}
+ .mob-hdr-btn.pri:active{background:#084478}
+ .mob-btn-menu{display:flex!important;align-items:center;justify-content:center;background:#1b3d60;border:1px solid #2c5880;color:#fff;border-radius:6px;width:30px;height:30px;font-size:16px;cursor:pointer;flex:none;margin-left:2px}
  main{flex:1;width:100%;height:100%;position:relative;overflow:hidden}
  aside.pal{position:fixed;top:0;left:0;bottom:0;width:min(340px,86vw);z-index:105;transform:translateX(-105%);transition:transform .26s cubic-bezier(0.16,1,0.3,1);box-shadow:4px 0 26px rgba(0,0,0,0.25);background:var(--panel);border-right:1px solid var(--line);padding:10px;overflow-y:auto;-webkit-overflow-scrolling:touch}
  aside.pal.mob-open{transform:translateX(0)}
@@ -240,6 +245,10 @@ main,#cv,#cv *{touch-action:none}
 <header>
   <div class="logo"><i></i>NetLab</div>
   <input class="title" id="title" title="Tên sơ đồ">
+  <div class="mob-header-actions">
+    <button id="bMobProject" class="mob-hdr-btn" title="Quản lý dự án (.netlab)">📁 Dự án</button>
+    <button id="bMobSave" class="mob-hdr-btn pri" title="Lưu / Chia sẻ file .netlab">💾 Lưu</button>
+  </div>
   <button id="bMobMenu" class="mob-btn-menu" title="Menu chức năng" aria-label="Menu">☰</button>
   <div class="tb">
     <button data-mode="select" title="Chọn / kéo (V)">↖ Chọn</button>
@@ -1958,6 +1967,17 @@ function openMobMenu(){
  box.append(h('div',{class:'drawer-header'},h('span',{},'☰ Menu chức năng'),h('button',{class:'drawer-close',onclick:closeModal},'✕')));
  const sections=[
   {
+   title:'📁 Dự án & Tập tin (.netlab)',
+   items:[
+    {label:'Quản lý dự án',icon:'📁',fn:()=>projectModal()},
+    {label:'Lưu / Gửi file (.netlab)',icon:'💾',fn:()=>saveProject(false)},
+    {label:'Mở file dự án',icon:'📂',fn:()=>$('#fileIn').click()},
+    {label:'Tạo dự án mới',icon:'📄',fn:()=>newProjectDialog()},
+    {label:'Xuất ảnh PNG',icon:'🖼',fn:()=>exportPng()},
+    {label:'Xuất đồ họa SVG',icon:'📐',fn:()=>$('#bSvg').click()}
+   ]
+  },
+  {
    title:'🏭 Danh mục & Thiết kế',
    items:[
     {label:'Sinh sơ đồ từ danh mục',icon:'🏭',fn:()=>genDialog()},
@@ -1971,17 +1991,7 @@ function openMobMenu(){
    items:[
     {label:'Kiểm tra cấu hình toàn mạng',icon:'✔',fn:()=>validate()},
     {label:'Máy tính Subnet / VLSM',icon:'⌗',fn:()=>subnetCalc()},
-    {label:'Vùng vẽ rộng (Ẩn/Hiện bảng)',icon:'⛶',fn:()=>toggleWide()}
-   ]
-  },
-  {
-   title:'💾 Tập tin & Dự án',
-   items:[
-    {label:'Lưu dự án (.netlab)',icon:'💾',fn:()=>saveProject()},
-    {label:'Mở dự án (.netlab)',icon:'📂',fn:()=>$('#fileIn').click()},
-    {label:'Tạo dự án mới',icon:'📄',fn:()=>newProjectDialog()},
-    {label:'Xuất ảnh PNG',icon:'🖼',fn:()=>exportPng()},
-    {label:'Xuất đồ họa SVG',icon:'📐',fn:()=>$('#bSvg').click()},
+    {label:'Vùng vẽ rộng (Ẩn/Hiện bảng)',icon:'⛶',fn:()=>toggleWide()},
     {label:'Nạp sơ đồ mẫu',icon:'🎯',fn:()=>$('#bDemo').click()},
     {label:'Hướng dẫn sử dụng',icon:'❓',fn:()=>helpModal()}
    ]
@@ -2021,13 +2031,126 @@ function exportProjectData(){
  };
 }
 
-function saveProject(){
+async function saveProject(forceDownloadOnly=false){
  pushUndo();
  const projectData=exportProjectData();
  const filename=fname('.netlab');
- download(filename,JSON.stringify(projectData,null,2),'application/octet-stream;charset=utf-8');
+ const jsonStr=JSON.stringify(projectData,null,2);
  save();
+ const isMobile=/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)||window.innerWidth<=900;
+ if(!forceDownloadOnly&&isMobile&&navigator.canShare){
+  try{
+   const file=new File([jsonStr],filename,{type:'application/json'});
+   if(navigator.canShare({files:[file]})){
+    await navigator.share({
+     title:S.title||'Dự án NetLab',
+     text:`Dự án sơ đồ mạng NetLab: ${S.title||'Sơ đồ mạng'} (${S.devices.length} thiết bị, ${S.links.length} kết nối)`,
+     files:[file]
+    });
+    log(`Đã chia sẻ file dự án "${filename}" thành công!`,'ok');
+    return;
+   }
+  }catch(err){
+   if(err.name==='AbortError')return;
+  }
+ }
+ download(filename,jsonStr,'application/octet-stream;charset=utf-8');
  log(`Đã lưu file dự án "${filename}" (${S.devices.length} thiết bị, ${S.links.length} kết nối) — có thể gửi sang máy khác để mở tiếp!`,'ok');
+}
+
+function projectModal(){
+ const box=h('div',{class:'mob-project-sheet'});
+ const devCount=S.devices.length;
+ const linkCount=S.links.length;
+ const zoneCount=S.zones.length;
+ box.innerHTML=`
+  <div style="background:var(--acc2);border:1px solid #c2dbf3;border-radius:10px;padding:12px;margin-bottom:14px;">
+   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+    <span style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--acc);letter-spacing:0.5px;">Dự án hiện tại</span>
+    <span style="font-size:11px;color:var(--muted);">${new Date().toLocaleDateString('vi-VN')}</span>
+   </div>
+   <input id="projModalTitle" value="${esc(S.title||'Sơ đồ mạng')}" placeholder="Tên dự án..." style="width:100%;font-size:14px;font-weight:700;padding:6px 8px;border:1px solid var(--line);border-radius:6px;background:#fff;margin-bottom:6px;">
+   <div style="font-size:12px;color:var(--muted);">
+    <b>${devCount}</b> thiết bị · <b>${linkCount}</b> kết nối · <b>${zoneCount}</b> phân khu
+   </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:8px;">
+   <button id="pSaveShareBtn" class="btn pri" style="display:flex;align-items:center;gap:11px;padding:12px 14px;text-align:left;border-radius:8px;font-size:13px;touch-action:manipulation;">
+    <span style="font-size:22px;flex:none;">📤</span>
+    <div style="flex:1;min-width:0;">
+     <b style="display:block;">Lưu & Chia sẻ file (.netlab)</b>
+     <span style="font-size:11px;opacity:0.9;display:block;">Gửi qua Zalo, Email, AirDrop, Drive hoặc lưu vào tệp</span>
+    </div>
+   </button>
+
+   <button id="pDownloadBtn" class="btn" style="display:flex;align-items:center;gap:11px;padding:11px 14px;text-align:left;border-radius:8px;font-size:13px;touch-action:manipulation;">
+    <span style="font-size:22px;flex:none;">💾</span>
+    <div style="flex:1;min-width:0;">
+     <b style="display:block;">Tải file về máy (.netlab)</b>
+     <span style="font-size:11px;color:var(--muted);display:block;">Tải trực tiếp tệp dự án vào thư mục tải về của máy</span>
+    </div>
+   </button>
+
+   <button id="pOpenBtn" class="btn" style="display:flex;align-items:center;gap:11px;padding:11px 14px;text-align:left;border-radius:8px;font-size:13px;touch-action:manipulation;">
+    <span style="font-size:22px;flex:none;">📂</span>
+    <div style="flex:1;min-width:0;">
+     <b style="display:block;">Mở file dự án (.netlab / .json)</b>
+     <span style="font-size:11px;color:var(--muted);display:block;">Chọn tệp từ máy hoặc app Tệp để mở xem / sửa</span>
+    </div>
+   </button>
+
+   <button id="pNewBtn" class="btn" style="display:flex;align-items:center;gap:11px;padding:11px 14px;text-align:left;border-radius:8px;font-size:13px;touch-action:manipulation;">
+    <span style="font-size:22px;flex:none;">📄</span>
+    <div style="flex:1;min-width:0;">
+     <b style="display:block;">Tạo dự án mới…</b>
+     <span style="font-size:11px;color:var(--muted);display:block;">Tạo bản vẽ trống hoặc nạp mẫu doanh nghiệp / kho</span>
+    </div>
+   </button>
+
+   <button id="pExportPngBtn" class="btn" style="display:flex;align-items:center;gap:11px;padding:11px 14px;text-align:left;border-radius:8px;font-size:13px;touch-action:manipulation;">
+    <span style="font-size:22px;flex:none;">🖼</span>
+    <div style="flex:1;min-width:0;">
+     <b style="display:block;">Xuất ảnh PNG sơ đồ</b>
+     <span style="font-size:11px;color:var(--muted);display:block;">Tải ảnh chụp sơ đồ chất lượng cao để gửi báo cáo</span>
+    </div>
+   </button>
+  </div>
+
+  <div style="margin-top:12px;padding:9px 12px;background:#f8fafc;border-radius:8px;font-size:11.5px;color:var(--muted);line-height:1.4;">
+   💡 <b>Gợi ý:</b> Bạn có thể gửi file <code>.netlab</code> qua Zalo / Email cho đồng nghiệp, người nhận mở trên điện thoại hoặc máy tính đều xem, sửa, xóa và nối mạng được bình thường!
+  </div>
+ `;
+ showModal('📁 Quản lý Dự án NetLab', box);
+ const titleIn=box.querySelector('#projModalTitle');
+ titleIn.onchange=e=>{
+  pushUndo();
+  S.title=e.target.value.trim()||'Sơ đồ mạng';
+  $('#title').value=S.title;
+  save();
+ };
+ box.querySelector('#pSaveShareBtn').onclick=()=>{
+  if(titleIn.value.trim()){S.title=titleIn.value.trim();$('#title').value=S.title}
+  closeModal();
+  saveProject(false);
+ };
+ box.querySelector('#pDownloadBtn').onclick=()=>{
+  if(titleIn.value.trim()){S.title=titleIn.value.trim();$('#title').value=S.title}
+  closeModal();
+  saveProject(true);
+ };
+ box.querySelector('#pOpenBtn').onclick=()=>{
+  closeModal();
+  $('#fileIn').click();
+ };
+ box.querySelector('#pNewBtn').onclick=()=>{
+  closeModal();
+  newProjectDialog();
+ };
+ box.querySelector('#pExportPngBtn').onclick=()=>{
+  closeModal();
+  exportPng();
+ };
 }
 
 function openProjectFile(file){
@@ -2194,6 +2317,8 @@ $('#mobBtnProps').onclick=toggleProps;
 $('#mobBtnLog').onclick=toggleLog;
 $('#mobBtnMore').onclick=openMobMenu;
 $('#bMobMenu').onclick=openMobMenu;
+$('#bMobProject')?.addEventListener('click',projectModal);
+$('#bMobSave')?.addEventListener('click',()=>saveProject(false));
 $('#drawerBackdrop').onclick=closeAllDrawers;
 
 document.addEventListener('keydown',e=>{
