@@ -219,9 +219,23 @@ main,#cv,#cv *{touch-action:none}
  .ph{padding:8px 10px}
  .ph b{font-size:14px}
 }
+.drop-overlay{position:fixed;inset:0;background:rgba(15,42,68,0.85);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);z-index:9999;display:flex;align-items:center;justify-content:center;pointer-events:none;transition:opacity .15s}
+.drop-overlay.hidden{display:none}
+.drop-card{background:#fff;border:3px dashed #3aa0ff;border-radius:18px;padding:36px 48px;text-align:center;box-shadow:0 16px 48px rgba(0,0,0,0.35);color:var(--text);pointer-events:none;animation:dropPulse 1.2s infinite alternate ease-in-out}
+@keyframes dropPulse{from{transform:scale(0.98)}to{transform:scale(1.02)}}
+.drop-icon{font-size:54px;margin-bottom:8px}
+.drop-card h3{margin:0 0 8px;font-size:18px;color:var(--hd)}
+.drop-card p{margin:0;font-size:13px;color:var(--muted)}
 </style>
 </head>
 <body>
+<div id="dropOverlay" class="drop-overlay hidden">
+  <div class="drop-card">
+    <div class="drop-icon">📁</div>
+    <h3>Thả file dự án vào đây để mở</h3>
+    <p>Hỗ trợ định dạng <b>.netlab</b> và <b>.json</b></p>
+  </div>
+</div>
 <div id="app">
 <header>
   <div class="logo"><i></i>NetLab</div>
@@ -261,15 +275,15 @@ main,#cv,#cv *{touch-action:none}
     <button id="bList" title="Danh sách quản lý: hostname, IP, cổng, tài khoản, MAC, serial, tem an ninh / an toàn">📋 Danh sách QL</button>
   </div>
   <div class="tb">
-    <button id="bNew">Mới</button>
-    <button id="bOpen">Mở…</button>
-    <button id="bSave" title="Lưu file .json">Lưu</button>
-    <button id="bPng">Xuất PNG</button>
-    <button id="bSvg">Xuất SVG</button>
-    <button id="bDemo" title="Nạp sơ đồ mẫu">Mẫu</button>
-    <button id="bHelp">?</button>
+    <button id="bNew" title="Tạo dự án mới (Ctrl+N)">📄 Mới</button>
+    <button id="bOpen" title="Mở file dự án .netlab / .json (Ctrl+O)">📂 Mở…</button>
+    <button id="bSave" title="Lưu dự án thành file .netlab (Ctrl+S)">💾 Lưu</button>
+    <button id="bPng" title="Xuất ảnh PNG">Xuất PNG</button>
+    <button id="bSvg" title="Xuất đồ họa vector SVG">Xuất SVG</button>
+    <button id="bDemo" title="Nạp sơ đồ mẫu doanh nghiệp">Mẫu</button>
+    <button id="bHelp" title="Hướng dẫn sử dụng">?</button>
   </div>
-  <input type="file" id="fileIn" accept=".json,application/json" class="hidden">
+  <input type="file" id="fileIn" accept=".netlab,.json,application/json,text/plain" class="hidden">
 </header>
 
 <aside class="pal" id="pal"></aside>
@@ -1206,9 +1220,20 @@ const fname=ext=>(S.title||'so-do-mang').replace(/[\\/:*?"<>|]+/g,'_')+ext;
 function exportPng(){const r=exportSvgText();if(!r)return log('Sơ đồ trống','warn');const img=new Image();const sc=Math.max(0.1,Math.min(2,16000/r.w,16000/r.h));
  img.onload=()=>{const cv=document.createElement('canvas');cv.width=r.w*sc;cv.height=r.h*sc;const g=cv.getContext('2d');g.fillStyle='#fff';g.fillRect(0,0,cv.width,cv.height);g.drawImage(img,0,0,cv.width,cv.height);cv.toBlob(b=>{const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=fname('.png');document.body.append(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500);log('Đã xuất PNG','ok')})};
  img.onerror=()=>log('Không xuất được PNG — hãy thử Xuất SVG','err');img.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(r.txt)}
-function loadData(o){if(!o||!Array.isArray(o.devices)||!Array.isArray(o.links))throw new Error('File không đúng định dạng NetLab');S=Object.assign(blank(),o);S.zones=S.zones||[];S.texts=S.texts||[];
+function loadData(o){
+ if(!o||!Array.isArray(o.devices)||!Array.isArray(o.links))throw new Error('Tệp không đúng định dạng NetLab (.netlab / .json)');
+ S=Object.assign(blank(),o);
+ if(o.title)S.title=o.title;
+ if(o.view&&typeof o.view.k==='number')S.view=o.view;
+ S.zones=S.zones||[];S.texts=S.texts||[];
  if(!S.plan||!S.plan.sites)S.plan=buildPlan();S.genWarn=S.genWarn||[];
- for(const d of S.devices){const T=TYPES[d.type];if(!T)throw new Error('Loại thiết bị lạ: '+d.type);d.users=d.users||[];d.grp=d.grp||TGRP[d.type]||'net';d.routes=d.routes||[];d.vlans=d.vlans||(T.sw?[{id:1,name:'default'}]:[]);d.ifaces=d.ifaces||[]}}
+ for(const d of S.devices){
+  const T=TYPES[d.type];
+  if(!T)throw new Error('Loại thiết bị lạ: '+d.type);
+  d.users=d.users||[];d.grp=d.grp||TGRP[d.type]||'net';d.routes=d.routes||[];
+  d.vlans=d.vlans||(T.sw?[{id:1,name:'default'}]:[]);d.ifaces=d.ifaces||[];
+ }
+}
 
 /* ================= Demo ================= */
 function demo(){const P0=S&&S.plan;S=blank();if(P0)S.plan=P0;S.title='Mô hình mạng mẫu – Trụ sở';
@@ -1950,14 +1975,14 @@ function openMobMenu(){
    ]
   },
   {
-   title:'💾 Tập tin & Xuất dữ liệu',
+   title:'💾 Tập tin & Dự án',
    items:[
-    {label:'Lưu file (.json)',icon:'💾',fn:()=>$('#bSave').click()},
-    {label:'Mở file (.json)',icon:'📂',fn:()=>$('#bOpen').click()},
+    {label:'Lưu dự án (.netlab)',icon:'💾',fn:()=>saveProject()},
+    {label:'Mở dự án (.netlab)',icon:'📂',fn:()=>$('#fileIn').click()},
+    {label:'Tạo dự án mới',icon:'📄',fn:()=>newProjectDialog()},
     {label:'Xuất ảnh PNG',icon:'🖼',fn:()=>exportPng()},
     {label:'Xuất đồ họa SVG',icon:'📐',fn:()=>$('#bSvg').click()},
     {label:'Nạp sơ đồ mẫu',icon:'🎯',fn:()=>$('#bDemo').click()},
-    {label:'Tạo sơ đồ mới',icon:'📄',fn:()=>$('#bNew').click()},
     {label:'Hướng dẫn sử dụng',icon:'❓',fn:()=>helpModal()}
    ]
   }
@@ -1978,6 +2003,160 @@ function openMobMenu(){
  showModal('Menu chức năng',box);
 }
 
+/* ================= Project Management (.netlab Standard) ================= */
+function exportProjectData(){
+ return {
+  format:'NetLab',
+  version:'2.0',
+  generator:'NetLab Kho Thong Minh',
+  savedAt:new Date().toISOString(),
+  title:S.title||'Sơ đồ mạng',
+  view:S.view,
+  devices:S.devices,
+  links:S.links,
+  zones:S.zones,
+  texts:S.texts,
+  plan:S.plan,
+  genWarn:S.genWarn||[]
+ };
+}
+
+function saveProject(){
+ pushUndo();
+ const projectData=exportProjectData();
+ const filename=fname('.netlab');
+ download(filename,JSON.stringify(projectData,null,2),'application/octet-stream;charset=utf-8');
+ save();
+ log(`Đã lưu file dự án "${filename}" (${S.devices.length} thiết bị, ${S.links.length} kết nối) — có thể gửi sang máy khác để mở tiếp!`,'ok');
+}
+
+function openProjectFile(file){
+ if(!file)return;
+ const r=new FileReader();
+ r.onload=()=>{
+  try{
+   const o=JSON.parse(r.result);
+   pushUndo();
+   const bk=S;
+   try{loadData(o)}catch(err){S=bk;undoS.pop();throw err}
+   sel=null;
+   for(const k in sessions)delete sessions[k];
+   afterChange(true);
+   fit();
+   log(`Đã mở dự án thành công: ${file.name} (${S.devices.length} thiết bị, ${S.links.length} kết nối)`,'ok');
+  }catch(err){
+   log('Không mở được file dự án: '+err.message,'err');
+   alert('Không thể mở tệp: '+file.name+'\nLý do: Tệp không đúng định dạng NetLab (.netlab / .json) hoặc bị hỏng.\nChi tiết: '+err.message);
+  }
+ };
+ r.readAsText(file);
+}
+
+function newProjectDialog(){
+ const box=h('div');
+ box.innerHTML=`
+  <div style="font-size:12.5px;color:var(--muted);margin-bottom:14px;line-height:1.5;">
+   Chọn phương thức để khởi tạo dự án mới:
+  </div>
+  <div style="display:flex;flex-direction:column;gap:9px;">
+   <button id="btnNewBlank" class="btn" style="display:flex;align-items:center;gap:12px;padding:11px 13px;text-align:left;cursor:pointer;">
+    <span style="font-size:24px;flex:none;">📄</span>
+    <div>
+     <b style="font-size:13px;display:block;">Sơ đồ trống (Blank Canvas)</b>
+     <span style="font-size:11.5px;color:var(--muted);display:block;margin-top:2px;">Bản vẽ trống hoàn toàn để tự đặt thiết bị và nối cáp từ đầu</span>
+    </div>
+   </button>
+   <button id="btnNewDemo" class="btn" style="display:flex;align-items:center;gap:12px;padding:11px 13px;text-align:left;cursor:pointer;">
+    <span style="font-size:24px;flex:none;">🏢</span>
+    <div>
+     <b style="font-size:13px;display:block;">Sơ đồ mẫu doanh nghiệp (Office Demo)</b>
+     <span style="font-size:11.5px;color:var(--muted);display:block;margin-top:2px;">Mô hình trụ sở: Router WAN, Core Switch L3, Server, PC, Camera, PLC quan trắc</span>
+    </div>
+   </button>
+   <button id="btnNewGen" class="btn" style="display:flex;align-items:center;gap:12px;padding:11px 13px;text-align:left;cursor:pointer;">
+    <span style="font-size:24px;flex:none;">🏭</span>
+    <div>
+     <b style="font-size:13px;display:block;">Tự sinh sơ đồ Kho thông minh</b>
+     <span style="font-size:11.5px;color:var(--muted);display:block;margin-top:2px;">Mở công cụ tự động sinh mạng phân khu kho (L1 Sở chỉ huy, L2 Lạc Thuỷ, L3, L4)</span>
+    </div>
+   </button>
+  </div>
+  ${S.devices.length ? `
+  <div style="margin-top:14px;padding-top:10px;border-top:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
+   <span style="font-size:11.5px;color:var(--muted);">Sơ đồ hiện tại đang có ${S.devices.length} thiết bị</span>
+   <button id="btnNewSaveCur" class="btn sm" style="font-size:11.5px;">💾 Lưu dự án hiện tại trước (.netlab)</button>
+  </div>
+  ` : ''}
+ `;
+ showModal('Tạo dự án mới',box);
+ box.querySelector('#btnNewBlank').onclick=()=>{
+  closeModal();
+  pushUndo();
+  const P0=S.plan;
+  S=blank();
+  S.plan=P0;
+  S.title='Sơ đồ mạng mới';
+  sel=null;
+  for(const k in sessions)delete sessions[k];
+  afterChange(true);
+  fit();
+  log('Đã tạo sơ đồ mới (trống)','ok');
+ };
+ box.querySelector('#btnNewDemo').onclick=()=>{
+  closeModal();
+  pushUndo();
+  demo();
+  sel=null;
+  for(const k in sessions)delete sessions[k];
+  afterChange(true);
+  fit();
+  log('Đã nạp sơ đồ mẫu doanh nghiệp','ok');
+ };
+ box.querySelector('#btnNewGen').onclick=()=>{
+  closeModal();
+  genDialog();
+ };
+ const btnSaveCur=box.querySelector('#btnNewSaveCur');
+ if(btnSaveCur) btnSaveCur.onclick=()=>{saveProject()};
+}
+
+/* ================= File Drag & Drop to Open Project ================= */
+let dragCounter=0;
+window.addEventListener('dragenter',e=>{
+ if(e.dataTransfer&&Array.from(e.dataTransfer.types).includes('Files')){
+  dragCounter++;
+  const el=$('#dropOverlay');
+  if(el)el.classList.remove('hidden');
+ }
+});
+window.addEventListener('dragleave',e=>{
+ if(e.dataTransfer&&Array.from(e.dataTransfer.types).includes('Files')){
+  dragCounter--;
+  if(dragCounter<=0){
+   dragCounter=0;
+   const el=$('#dropOverlay');
+   if(el)el.classList.add('hidden');
+  }
+ }
+});
+window.addEventListener('dragover',e=>{
+ if(e.dataTransfer&&Array.from(e.dataTransfer.types).includes('Files')){
+  e.preventDefault();
+ }
+});
+window.addEventListener('drop',e=>{
+ dragCounter=0;
+ const el=$('#dropOverlay');
+ if(el)el.classList.add('hidden');
+ if(e.dataTransfer&&e.dataTransfer.files&&e.dataTransfer.files.length){
+  const f=e.dataTransfer.files[0];
+  if(f.name.endsWith('.netlab')||f.name.endsWith('.json')||f.type==='application/json'){
+   e.preventDefault();
+   openProjectFile(f);
+  }
+ }
+});
+
 /* ================= Wiring ================= */
 document.querySelectorAll('[data-mode]').forEach(b=>b.onclick=()=>setMode(b.dataset.mode));
 $('#bAddZone').onclick=()=>addZone();
@@ -1992,11 +2171,11 @@ $('#cable').addEventListener('change',()=>{if(mode!=='connect')setMode('connect'
 $('#bUndo').onclick=undo;$('#bRedo').onclick=redo;$('#bDel').onclick=delSel;
 $('#bFit').onclick=fit;$('#bZi').onclick=()=>{const r=svg.getBoundingClientRect();zoomAt(r.width/2,r.height/2,1.2)};$('#bZo').onclick=()=>{const r=svg.getBoundingClientRect();zoomAt(r.width/2,r.height/2,1/1.2)};
 $('#bCheck').onclick=validate;$('#siteJump').onchange=e=>{const v=e.target.value;e.target.value='';if(v==='*')return fit();const z=S.zones.find(z=>z.id===v);if(z){select({k:'zone',id:z.id});zoomSel()}};$('#bGen').onclick=()=>genDialog();$('#bStat').onclick=()=>statsModal();$('#bList').onclick=()=>listModal();$('#bInv').onclick=()=>inventory();$('#bCalc').onclick=subnetCalc;$('#bHelp').onclick=helpModal;
-$('#bNew').onclick=()=>{if(!confirm('Tạo sơ đồ mới? Sơ đồ hiện tại sẽ bị thay thế (vẫn có thể Hoàn tác).'))return;pushUndo();{const P0=S.plan;S=blank();S.plan=P0}sel=null;for(const k in sessions)delete sessions[k];afterChange(true);log('Tạo sơ đồ mới')};
+$('#bNew').onclick=()=>newProjectDialog();
 $('#bDemo').onclick=()=>{if(S.devices.length&&!confirm('Nạp sơ đồ mẫu? Sơ đồ hiện tại sẽ bị thay thế (vẫn có thể Hoàn tác).'))return;pushUndo();demo();sel=null;for(const k in sessions)delete sessions[k];afterChange(true);fit();log('Đã nạp sơ đồ mẫu','ok')};
-$('#bSave').onclick=()=>{download(fname('.netlab.json'),JSON.stringify(S,null,1),'application/json');log('Đã lưu file '+fname('.netlab.json'),'ok')};
+$('#bSave').onclick=()=>saveProject();
 $('#bOpen').onclick=()=>$('#fileIn').click();
-$('#fileIn').onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const o=JSON.parse(r.result);pushUndo();const bk=S;try{loadData(o)}catch(err){S=bk;undoS.pop();throw err}sel=null;for(const k in sessions)delete sessions[k];afterChange(true);fit();log('Đã mở '+f.name,'ok')}catch(err){log('Không mở được file: '+err.message,'err')}};r.readAsText(f);e.target.value=''};
+$('#fileIn').onchange=e=>{const f=e.target.files[0];if(!f)return;openProjectFile(f);e.target.value=''};
 $('#bPng').onclick=exportPng;$('#bSvg').onclick=()=>{const r=exportSvgText();if(!r)return log('Sơ đồ trống','warn');download(fname('.svg'),r.txt,'image/svg+xml');log('Đã xuất SVG','ok')};
 $('#title').addEventListener('change',e=>{pushUndo();S.title=e.target.value;save();renderProps()});
 $('#logClr').onclick=()=>$('#logBody').innerHTML='';$('#logMin').onclick=e=>{$('#log').classList.toggle('min');e.target.textContent=$('#log').classList.contains('min')?'▴':'▾'};
@@ -2022,7 +2201,16 @@ document.addEventListener('keydown',e=>{
  if(e.key==='Escape'){hidePop();closeAllDrawers();if(!$('#mbg').classList.contains('hidden'))return closeModal();if(cliId)return;setMode('select');return}
  if(typing||cliId||!$('#mbg').classList.contains('hidden'))return;
  if(e.key===' '){spaceDown=true;e.preventDefault();return}
- if(e.ctrlKey||e.metaKey){const k=e.key.toLowerCase();if(k==='z'){e.preventDefault();e.shiftKey?redo():undo()}else if(k==='y'){e.preventDefault();redo()}else if(k==='d'){e.preventDefault();if(sel&&sel.k==='dev')duplicate(dev(sel.id))}else if(k==='s'){e.preventDefault();$('#bSave').click()}return}
+ if(e.ctrlKey||e.metaKey){
+  const k=e.key.toLowerCase();
+  if(k==='z'){e.preventDefault();e.shiftKey?redo():undo()}
+  else if(k==='y'){e.preventDefault();redo()}
+  else if(k==='d'){e.preventDefault();if(sel&&sel.k==='dev')duplicate(dev(sel.id))}
+  else if(k==='s'){e.preventDefault();saveProject()}
+  else if(k==='o'){e.preventDefault();$('#fileIn').click()}
+  else if(k==='n'){e.preventDefault();newProjectDialog()}
+  return
+ }
  if(e.key==='Delete'||e.key==='Backspace'){e.preventDefault();delSel();return}
  const map={v:'select',c:'connect',z:'zone',t:'text',p:'pdu'};const k=e.key.toLowerCase();if(map[k])setMode(map[k]);else if(k==='f')fit();else if(k==='e')zoomSel();else if(k==='0')zoom100();else if(k==='+'||k==='='){const r=svg.getBoundingClientRect();zoomAt(r.width/2,r.height/2,1.25)}else if(k==='-'){const r=svg.getBoundingClientRect();zoomAt(r.width/2,r.height/2,0.8)}else if(e.key==='Tab'){e.preventDefault();toggleWide()}});
 document.addEventListener('keyup',e=>{if(e.key===' ')spaceDown=false});
