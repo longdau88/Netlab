@@ -577,8 +577,9 @@ function devSvg(d){
  if(opt.ip){const ips=d.ifaces.filter(i=>i.ip);ips.slice(0,2).forEach((i,k)=>{const c=parseMask(i.mask);t+=`<text class="di" y="${53+k*12}" text-anchor="middle">${esc(i.ip)}${c!=null?'/'+c:''}</text>`});if(ips.length>2)t+=`<text class="di" y="${77}" text-anchor="middle">+${ips.length-2} IP</text>`}
  return t+'</g>'}
 function zoneSvg(z){const s=sel&&sel.k==='zone'&&sel.id===z.id;const sub=z.net?` ${z.net} · VLAN ${z.vlan}`:'';const g=window.__exp?1:Math.min(40,Math.max(1,0.8/S.view.k));let f=Math.max(1,Math.min(g,z.w*0.94/((z.name.length+sub.length*0.85+2)*7.4)));
- const room=z.hd||1e9;let out=false;if(22*f>room){if(z.kind==='site'&&!window.__exp)out=true;else f=Math.max(0.6,room/22)}const sw=(s?2.5:1.5)*g,hh=Math.min(out?room:30*f,z.h,room);
- return `<g data-k="zone" data-id="${z.id}"><rect x="${z.x}" y="${z.y}" width="${z.w}" height="${z.h}" rx="12" fill="${z.color}" fill-opacity=".06" stroke="${z.color}" stroke-width="${sw}" ${s?'':`stroke-dasharray="${9*g} ${5*g}"`}/><rect data-k="zhd" data-id="${z.id}" x="${z.x}" y="${z.y}" width="${z.w}" height="${hh}" rx="12" fill="${z.color}" fill-opacity="${s?.22:.11}" style="cursor:move"><title>Kéo thanh tiêu đề để di chuyển vùng (kèm thiết bị bên trong) · nhấp đúp để đổi tên</title></rect><text class="zl" pointer-events="none" style="font-size:${13*f}px" x="${z.x+12*Math.min(f,3)}" y="${out?z.y-7*f:z.y+20*f}" fill="${z.color}">${esc(z.name)}${sub?`<tspan style="font-size:${11*f}px;font-weight:400" fill-opacity=".85"> ${esc(sub)}</tspan>`:''}</text>${s?`<rect data-k="zh" data-id="${z.id}" x="${z.x+z.w-11*f}" y="${z.y+z.h-11*f}" width="${14*f}" height="${14*f}" rx="3" fill="${z.color}" style="cursor:nwse-resize"/>`:''}</g>`}
+ const room=z.hd||1e9;let out=false;if(22*f>room){if(z.kind==='site'&&!window.__exp)out=true;else f=Math.max(0.6,room/22)}const sw=(s?2.8:1.5)*g,hh=Math.min(out?room:30*f,z.h,room);
+ const topY=out?z.y-26*f:z.y,topH=out?hh+26*f:hh;
+ return `<g data-k="zone" data-id="${z.id}"><rect x="${z.x}" y="${z.y}" width="${z.w}" height="${z.h}" rx="12" fill="${z.color}" fill-opacity="${s?.08:.05}" stroke="${z.color}" stroke-width="${sw}" ${s?'':`stroke-dasharray="${9*g} ${5*g}"`}/><rect data-k="zhd" data-id="${z.id}" x="${z.x}" y="${topY}" width="${z.w}" height="${topH}" rx="10" fill="${z.color}" fill-opacity="${s?.26:.12}" style="cursor:move"><title>Kéo thanh tiêu đề để di chuyển vùng (kèm thiết bị bên trong) · nhấp đúp để đổi tên</title></rect><text class="zl" pointer-events="none" style="font-size:${13*f}px" x="${z.x+12*Math.min(f,3)}" y="${out?z.y-7*f:z.y+20*f}" fill="${z.color}">${esc(z.name)}${sub?`<tspan style="font-size:${11*f}px;font-weight:400" fill-opacity=".85"> ${esc(sub)}</tspan>`:''}</text>${s?`<rect data-k="zh" data-id="${z.id}" x="${z.x+z.w-14*f}" y="${z.y+z.h-14*f}" width="${18*f}" height="${18*f}" rx="4" fill="${z.color}" stroke="#fff" stroke-width="1.5" style="cursor:nwse-resize"/><g data-k="zhd" data-id="${z.id}" style="cursor:move"><rect x="${z.x+Math.max(10*g,12)}" y="${topY+3*f}" width="${Math.max(108*g,116)}" height="${Math.max(22*g,26)}" rx="5" fill="${z.color}" stroke="#fff" stroke-width="1.5"/><text x="${z.x+Math.max(10*g,12)+Math.max(54*g,58)}" y="${topY+3*f+Math.max(15*g,18)}" font-size="${Math.max(11*g,13)}px" font-weight="700" fill="#fff" text-anchor="middle" pointer-events="none">✥ Kéo dời vùng</text></g>`:''}</g>`}
 function textSvg(t){const s=sel&&sel.k==='text'&&sel.id===t.id;const lines=String(t.text||'').split('\n');
  return `<text data-k="text" data-id="${t.id}" class="tx" x="${t.x}" y="${t.y}" font-size="${t.size||14}" fill="${t.color||'#1d2733'}" style="cursor:move;${s?'stroke:#ffcf3a;stroke-width:5px;paint-order:stroke':''}">${lines.map((ln,i)=>`<tspan x="${t.x}" dy="${i?1.25:0}em">${esc(ln)||' '}</tspan>`).join('')}</text>`}
 function renderView(){
@@ -587,7 +588,8 @@ function renderView(){
  svg.classList.toggle('lod',v.k<0.35);$('#stZoom').textContent=`Zoom ${Math.round(v.k*100)}%`}
 function render(){
  renderView();$('#bg').style.display=opt.grid?'':'none';
- $('#gZones').innerHTML=S.zones.map(zoneSvg).join('');
+ const sortedZones=(sel&&sel.k==='zone')?S.zones.slice().sort((a,b)=>(a.id===sel.id?1:b.id===sel.id?-1:0)):S.zones;
+ $('#gZones').innerHTML=sortedZones.map(zoneSvg).join('');
  const hid=new Set(S.devices.filter(d=>opt.hideG[grpOf(d)]).map(d=>d.id));
  _pairs=new Map();for(const l of S.links){const k=pairKey(l);if(!_pairs.has(k))_pairs.set(k,[]);_pairs.get(k).push(l)}
  $('#gLinks').innerHTML=S.links.filter(l=>!hid.has(l.a[0])&&!hid.has(l.b[0])).map(linkSvg).join('');
@@ -641,6 +643,30 @@ const activeTouches=new Map();
 let pinchData=null;
 let lpTimer=null;
 
+function getZoneContents(z){
+ const inner=S.devices.filter(d=>{
+  if(d.x>=z.x-15&&d.x<=z.x+z.w+15&&d.y>=z.y-15&&d.y<=z.y+z.h+15)return true;
+  if(z.kind==='site'&&z.site&&d.location&&d.location.includes(z.site))return true;
+  return false;
+ }).map(d=>d.id);
+ const innerT=S.texts.filter(t=>t.x>=z.x-15&&t.x<=z.x+z.w+15&&t.y>=z.y-15&&t.y<=z.y+z.h+15).map(t=>t.id);
+ const innerZ=S.zones.filter(y=>{
+  if(y.id===z.id)return false;
+  if(z.kind==='site'&&z.site&&y.site===z.site)return true;
+  const cx=y.x+y.w/2,cy=y.y+y.h/2;
+  if(cx>=z.x&&cx<=z.x+z.w&&cy>=z.y&&cy<=z.y+z.h)return true;
+  if(y.x>=z.x-20&&y.y>=z.y-20&&y.x+y.w<=z.x+z.w+20&&y.y+y.h<=z.y+z.h+20)return true;
+  return false;
+ }).map(y=>y.id);
+ return {inner,innerT,innerZ};
+}
+
+function startZoneDrag(z,w){
+ const {inner,innerT,innerZ}=getZoneContents(z);
+ select({k:'zone',id:z.id});
+ return {type:'zone',id:z.id,lx:w.x,ly:w.y,moved:false,inner,innerT,innerZ};
+}
+
 function cleanTouch(pointerId){
  activeTouches.delete(pointerId);
  if(activeTouches.size<2){
@@ -651,7 +677,6 @@ function cleanTouch(pointerId){
  }
  if(activeTouches.size===0){
   pinchData=null;
-  drag=null;
   if(lpTimer){clearTimeout(lpTimer);lpTimer=null}
  }else if(activeTouches.size===1&&!drag){
   const rem=Array.from(activeTouches.values())[0];
@@ -714,13 +739,33 @@ svg.addEventListener('pointerdown',e=>{
  if(mode==='pdu'){if(k==='dev')pduClick(id);return}
  if(mode==='text'){pushUndo();const t={id:uid('t'),x:snapV(w.x),y:snapV(w.y),text:'Ghi chú',size:14,color:'#1d2733'};S.texts.push(t);setMode('select');select({k:'text',id:t.id});afterChange(true);setTimeout(()=>{const ta=$('#props textarea');if(ta){ta.focus();ta.select()}},50);return}
  if(mode==='zone'){drag={type:'newzone',x0:w.x,y0:w.y};try{svg.setPointerCapture(e.pointerId)}catch(_){}return}
+
+ const selZ=(sel&&sel.k==='zone')?S.zones.find(z=>z.id===sel.id):null;
+ const inSelZ=selZ&&(w.x>=selZ.x-15&&w.x<=selZ.x+selZ.w+15&&w.y>=(selZ.y-(selZ.kind==='site'?40:15))&&w.y<=selZ.y+selZ.h+15);
+
  if(k==='dev'){const d=dev(id);select({k:'dev',id});drag={type:'dev',id,dx:w.x-d.x,dy:w.y-d.y,moved:false,z0:(locZoneAt(d.x,d.y)||{}).id}}
  else if(k==='zh'){select({k:'zone',id});drag={type:'zres',id,moved:false}}
- else if(k==='zhd'){const z=S.zones.find(z=>z.id===id);select({k:'zone',id});drag={type:'zone',id,lx:w.x,ly:w.y,moved:false,inner:S.devices.filter(d=>d.x>=z.x&&d.x<=z.x+z.w&&d.y>=z.y&&d.y<=z.y+z.h).map(d=>d.id),innerT:S.texts.filter(t=>t.x>=z.x&&t.x<=z.x+z.w&&t.y>=z.y&&t.y<=z.y+z.h).map(t=>t.id),innerZ:S.zones.filter(y=>y!==z&&y.x>=z.x&&y.y>=z.y&&y.x+y.w<=z.x+z.w&&y.y+y.h<=z.y+z.h).map(y=>y.id)}}
- else if(k==='zone'){drag={type:'pan',sx:e.clientX,sy:e.clientY,vx:S.view.x,vy:S.view.y,clickSel:{k:'zone',id}}}
+ else if(k==='zhd'){const z=S.zones.find(z=>z.id===id);if(z)drag=startZoneDrag(z,w)}
+ else if(k==='zone'){
+  if(selZ&&selZ.id===id){
+   drag=startZoneDrag(selZ,w);
+  }else if(selZ&&inSelZ){
+   drag=startZoneDrag(selZ,w);
+   drag.tapSwitch={k:'zone',id};
+  }else{
+   drag={type:'pan',sx:e.clientX,sy:e.clientY,vx:S.view.x,vy:S.view.y,clickSel:{k:'zone',id}};
+  }
+ }
  else if(k==='text'){const t=S.texts.find(t=>t.id===id);select({k:'text',id});drag={type:'text',id,dx:w.x-t.x,dy:w.y-t.y,moved:false}}
  else if(k==='link'){select({k:'link',id})}
- else{if(sel)select(null);drag={type:'pan',sx:e.clientX,sy:e.clientY,vx:S.view.x,vy:S.view.y}}
+ else{
+  if(selZ&&inSelZ){
+   drag=startZoneDrag(selZ,w);
+  }else{
+   if(sel)select(null);
+   drag={type:'pan',sx:e.clientX,sy:e.clientY,vx:S.view.x,vy:S.view.y};
+  }
+ }
  try{svg.setPointerCapture(e.pointerId)}catch(_){}});
 
 let rafP=false;
@@ -757,19 +802,42 @@ svg.addEventListener('pointermove',e=>{
   if(drag.type==='dev'){const d=dev(drag.id);d.x=snapV(w.x-drag.dx);d.y=snapV(w.y-drag.dy)}
   else if(drag.type==='text'){const t=S.texts.find(t=>t.id===drag.id);t.x=snapV(w.x-drag.dx);t.y=snapV(w.y-drag.dy)}
   else if(drag.type==='zres'){const z=S.zones.find(z=>z.id===drag.id);z.w=Math.max(80,snapV(w.x-z.x));z.h=Math.max(60,snapV(w.y-z.y))}
-  else if(drag.type==='zone'){const dx=w.x-drag.lx,dy=w.y-drag.ly;drag.lx=w.x;drag.ly=w.y;const z=S.zones.find(z=>z.id===drag.id);z.x+=dx;z.y+=dy;for(const id of drag.inner){const d=dev(id);d.x+=dx;d.y+=dy}for(const id of drag.innerT){const t=S.texts.find(t=>t.id===id);t.x+=dx;t.y+=dy}for(const id of drag.innerZ||[]){const y=S.zones.find(q=>q.id===id);if(y){y.x+=dx;y.y+=dy}}}}
+  else if(drag.type==='zone'){
+   const dx=w.x-drag.lx,dy=w.y-drag.ly;
+   drag.lx=w.x;drag.ly=w.y;
+   const z=S.zones.find(z=>z.id===drag.id);
+   if(z){
+    z.x+=dx;z.y+=dy;
+    for(const id of drag.inner){const d=dev(id);if(d){d.x+=dx;d.y+=dy}}
+    for(const id of drag.innerT){const t=S.texts.find(t=>t.id===id);if(t){t.x+=dx;t.y+=dy}}
+    for(const id of drag.innerZ||[]){const y=S.zones.find(q=>q.id===id);if(y){y.x+=dx;y.y+=dy}}
+   }
+  }
+ }
  if(!rafP){rafP=true;requestAnimationFrame(()=>{rafP=false;render()})}});
 
 svg.addEventListener('pointerup',e=>{
  if(lpTimer){clearTimeout(lpTimer);lpTimer=null}
+ if(drag){
+  const w=toW(e);
+  if(drag.type==='newzone'){$('#gTemp').innerHTML='';const W=Math.abs(w.x-drag.x0),H=Math.abs(w.y-drag.y0);if(W>30&&H>30){pushUndo();const z={id:uid('z'),x:snapV(Math.min(w.x,drag.x0)),y:snapV(Math.min(w.y,drag.y0)),w:snapV(W),h:snapV(H),name:'Vùng '+(S.zones.length+1),color:ZCOLORS[S.zones.length%ZCOLORS.length]};S.zones.push(z);setMode('select');select({k:'zone',id:z.id});save()}}
+  else if(drag.type==='zone'&&drag.moved){
+   for(const id of drag.inner){const d=dev(id);if(d){d.x=snapV(d.x);d.y=snapV(d.y)}}
+   for(const id of drag.innerZ||[]){const y=S.zones.find(q=>q.id===id);if(y){y.x=snapV(y.x);y.y=snapV(y.y)}}
+   for(const id of drag.innerT||[]){const t=S.texts.find(q=>q.id===id);if(t){t.x=snapV(t.x);t.y=snapV(t.y)}}
+   const z=S.zones.find(z=>z.id===drag.id);if(z){z.x=snapV(z.x);z.y=snapV(z.y)}
+   render();save();
+  }
+  else if(drag.type==='zone'&&!drag.moved&&drag.tapSwitch){
+   select(drag.tapSwitch);
+  }
+  else if(drag.type==='dev'&&drag.moved){const d=dev(drag.id);render();onDevMoved(d,drag.z0);save()}
+  else if(drag.type==='pan'){if(!drag.moved&&drag.clickSel)select(drag.clickSel);save()}
+  else if(drag.moved)save();
+  drag=null;
+ }
  cleanTouch(e.pointerId);
- if(!drag)return;const w=toW(e);
- if(drag.type==='newzone'){$('#gTemp').innerHTML='';const W=Math.abs(w.x-drag.x0),H=Math.abs(w.y-drag.y0);if(W>30&&H>30){pushUndo();const z={id:uid('z'),x:snapV(Math.min(w.x,drag.x0)),y:snapV(Math.min(w.y,drag.y0)),w:snapV(W),h:snapV(H),name:'Vùng '+(S.zones.length+1),color:ZCOLORS[S.zones.length%ZCOLORS.length]};S.zones.push(z);setMode('select');select({k:'zone',id:z.id});save()}}
- else if(drag.type==='zone'&&drag.moved){for(const id of drag.inner){const d=dev(id);d.x=snapV(d.x);d.y=snapV(d.y)}for(const id of drag.innerZ||[]){const y=S.zones.find(q=>q.id===id);if(y){y.x=snapV(y.x);y.y=snapV(y.y)}}const z=S.zones.find(z=>z.id===drag.id);z.x=snapV(z.x);z.y=snapV(z.y);render();save()}
- else if(drag.type==='dev'&&drag.moved){const d=dev(drag.id);render();onDevMoved(d,drag.z0);save()}
- else if(drag.type==='pan'){if(!drag.moved&&drag.clickSel)select(drag.clickSel);save()}
- else if(drag.moved)save();
- drag=null});
+});
 
 svg.addEventListener('pointercancel',e=>{
  if(lpTimer){clearTimeout(lpTimer);lpTimer=null}
@@ -1916,16 +1984,32 @@ function updateStatusBanner(){
 
 function updateDevCard(){
  const card=$('#mobDevCard');if(!card)return;
- if(sel&&sel.k==='dev'&&window.innerWidth<=900&&!$('#props').classList.contains('mob-open')){
-  const d=dev(sel.id);
-  if(d){
-   const T=TYPES[d.type];
-   $('#mobDevIcon')?.setAttribute('href',`#ic-${d.type}`);
-   if($('#mobDevName'))$('#mobDevName').textContent=d.name;
-   const ip=firstIp(d);
-   if($('#mobDevSub'))$('#mobDevSub').textContent=(T.label||'')+(ip?` · ${ip}`:(d.model?` · ${d.model}`:''));
-   card.classList.remove('hidden');
-   return;
+ if(sel&&window.innerWidth<=900&&!$('#props').classList.contains('mob-open')){
+  if(sel.k==='dev'){
+   const d=dev(sel.id);
+   if(d){
+    const T=TYPES[d.type];
+    $('#mobDevIcon')?.setAttribute('href',`#ic-${d.type}`);
+    if($('#mobDevName'))$('#mobDevName').textContent=d.name;
+    const ip=firstIp(d);
+    if($('#mobDevSub'))$('#mobDevSub').textContent=(T.label||'')+(ip?` · ${ip}`:(d.model?` · ${d.model}`:''));
+    if($('#mobDevBtnCli'))$('#mobDevBtnCli').style.display='';
+    card.classList.remove('hidden');
+    return;
+   }
+  }else if(sel.k==='zone'){
+   const z=S.zones.find(z=>z.id===sel.id);
+   if(z){
+    const {inner,innerZ}=getZoneContents(z);
+    $('#mobDevIcon')?.setAttribute('href','#ic-cloud');
+    if($('#mobDevName'))$('#mobDevName').textContent=z.name;
+    const KIND={site:'Điểm / Kho lớn',cum:'Cụm trung tâm',grp:'Nhóm kho',core:'Trung tâm',loc:'Vị trí / Tủ'};
+    const sub=KIND[z.kind]||'Vùng hệ thống';
+    if($('#mobDevSub'))$('#mobDevSub').textContent=`${sub} · ${inner.length} thiết bị${innerZ.length?` · ${innerZ.length} vùng con`:''} (chạm kéo để dời)`;
+    if($('#mobDevBtnCli'))$('#mobDevBtnCli').style.display='none';
+    card.classList.remove('hidden');
+    return;
+   }
   }
  }
  card.classList.add('hidden');
