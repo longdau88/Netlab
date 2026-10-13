@@ -145,13 +145,11 @@ a.loc{cursor:pointer;color:var(--acc);font-family:Consolas,monospace}a.loc:hover
 .zt{display:flex;gap:5px;align-items:center;margin:2px 0}.zt input{flex:1;min-width:0;border:1px solid var(--line);border-radius:5px;padding:2px 5px}
 
 /* ================= Mobile & Responsive Styles ================= */
-.cv-controls{position:absolute;bottom:14px;right:14px;display:flex;flex-direction:column;gap:5px;z-index:25;background:rgba(255,255,255,0.92);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid var(--line);border-radius:9px;padding:4px;box-shadow:0 4px 18px rgba(0,0,0,0.14)}
-.cv-controls button{width:34px;height:34px;display:flex;align-items:center;justify-content:center;border:none;background:transparent;border-radius:6px;font-size:15px;font-weight:700;color:var(--text);cursor:pointer;touch-action:manipulation;transition:background .12s,color .12s}
-.cv-controls button:hover,.cv-controls button:active{background:var(--acc2);color:var(--acc)}
+main,#cv,#cv *{touch-action:none}
 .mob-status-banner{position:absolute;top:10px;left:50%;transform:translateX(-50%);background:rgba(15,42,68,0.94);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);color:#fff;padding:6px 14px;border-radius:24px;display:flex;align-items:center;gap:10px;z-index:30;box-shadow:0 4px 20px rgba(0,0,0,0.25);font-size:12px;max-width:92vw;white-space:nowrap}
 .mob-status-banner span{overflow:hidden;text-overflow:ellipsis;max-width:240px}
 .mob-status-banner button{background:rgba(255,255,255,0.22);color:#fff;border:none;border-radius:12px;padding:3px 9px;font-size:11px;cursor:pointer}
-.mob-dev-card{position:absolute;bottom:12px;left:12px;right:66px;background:rgba(255,255,255,0.96);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid var(--line);border-radius:10px;padding:7px 11px;z-index:24;box-shadow:0 6px 22px rgba(0,0,0,0.16);display:flex;align-items:center;justify-content:space-between;gap:8px}
+.mob-dev-card{position:absolute;bottom:12px;left:12px;right:12px;background:rgba(255,255,255,0.96);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid var(--line);border-radius:10px;padding:7px 11px;z-index:24;box-shadow:0 6px 22px rgba(0,0,0,0.16);display:flex;align-items:center;justify-content:space-between;gap:8px}
 .mob-dev-info{display:flex;align-items:center;gap:8px;min-width:0;cursor:pointer}
 .mob-dev-info svg{width:32px;height:32px;flex:none}
 .mob-dev-text{min-width:0}
@@ -317,13 +315,6 @@ a.loc{cursor:pointer;color:var(--acc);font-family:Consolas,monospace}a.loc:hover
 <g id="world"><g id="gZones"></g><g id="gLinks"></g><g id="gDevs"></g><g id="gTexts"></g><g id="gTemp"></g><g id="gAnim"></g></g>
 </svg>
 
-<div id="cvControls" class="cv-controls">
-  <button id="mZoomIn" title="Phóng to" aria-label="Phóng to">+</button>
-  <button id="mZoomOut" title="Thu nhỏ" aria-label="Thu nhỏ">−</button>
-  <button id="mZoomFit" title="Vừa màn hình" aria-label="Vừa màn hình">⤢</button>
-  <button id="mZoom100" title="Tỉ lệ 1:1" aria-label="Tỉ lệ 1:1">1:1</button>
-  <button id="mZoomSel" title="Tới đối tượng đang chọn" aria-label="Tới">⌖</button>
-</div>
 
 <div id="mobStatusBanner" class="mob-status-banner hidden">
   <span id="mobStatusText">Chế độ</span>
@@ -625,20 +616,57 @@ const activeTouches=new Map();
 let pinchData=null;
 let lpTimer=null;
 
+function cleanTouch(pointerId){
+ activeTouches.delete(pointerId);
+ if(activeTouches.size<2){
+  if(pinchData){
+   save();
+   pinchData=null;
+  }
+ }
+ if(activeTouches.size===0){
+  pinchData=null;
+  drag=null;
+  if(lpTimer){clearTimeout(lpTimer);lpTimer=null}
+ }else if(activeTouches.size===1&&!drag){
+  const rem=Array.from(activeTouches.values())[0];
+  drag={type:'pan',sx:rem.x,sy:rem.y,vx:S.view.x,vy:S.view.y,moved:true};
+ }
+}
+
+window.addEventListener('pointerup',e=>cleanTouch(e.pointerId));
+window.addEventListener('pointercancel',e=>cleanTouch(e.pointerId));
+window.addEventListener('blur',()=>{
+ activeTouches.clear();
+ pinchData=null;
+ drag=null;
+ if(lpTimer){clearTimeout(lpTimer);lpTimer=null}
+});
+
+// Chống safari / webkit giật zoom toàn trang và bounce
+document.addEventListener('gesturestart',e=>e.preventDefault(),{passive:false});
+document.addEventListener('gesturechange',e=>e.preventDefault(),{passive:false});
+document.addEventListener('gestureend',e=>e.preventDefault(),{passive:false});
+svg.addEventListener('touchstart',e=>{if(e.touches.length>1)e.preventDefault()},{passive:false});
+svg.addEventListener('touchmove',e=>{if(e.touches.length>1)e.preventDefault()},{passive:false});
+
 svg.addEventListener('pointerdown',e=>{
  hidePop();
  activeTouches.set(e.pointerId,{x:e.clientX,y:e.clientY});
- if(activeTouches.size===2){
+ if(activeTouches.size>=2){
   if(lpTimer){clearTimeout(lpTimer);lpTimer=null}
   drag=null;
+  try{svg.releasePointerCapture(e.pointerId)}catch(_){}
   const pts=Array.from(activeTouches.values());
+  const r=svg.getBoundingClientRect();
+  const midX=(pts[0].x+pts[1].x)/2-r.left;
+  const midY=(pts[0].y+pts[1].y)/2-r.top;
+  const dist=Math.hypot(pts[1].x-pts[0].x,pts[1].y-pts[0].y)||1;
   pinchData={
-   dist0:Math.hypot(pts[1].x-pts[0].x,pts[1].y-pts[0].y)||1,
-   mid0X:(pts[0].x+pts[1].x)/2,
-   mid0Y:(pts[0].y+pts[1].y)/2,
+   dist0:dist,
    k0:S.view.k,
-   vx0:S.view.x,
-   vy0:S.view.y
+   wMidX:(midX-S.view.x)/S.view.k,
+   wMidY:(midY-S.view.y)/S.view.k
   };
   return;
  }
@@ -654,13 +682,13 @@ svg.addEventListener('pointerdown',e=>{
  }
 
  const w=toW(e);const tg=e.target.closest('[data-k]');const k=tg&&tg.dataset.k,id=tg&&tg.dataset.id;
- if(e.button===1||(e.button===0&&spaceDown)){drag={type:'pan',sx:e.clientX,sy:e.clientY,vx:S.view.x,vy:S.view.y};svg.setPointerCapture(e.pointerId);return}
+ if(e.button===1||(e.button===0&&spaceDown)){drag={type:'pan',sx:e.clientX,sy:e.clientY,vx:S.view.x,vy:S.view.y};try{svg.setPointerCapture(e.pointerId)}catch(_){}return}
  if(e.button!==0)return;
  if(placing){addDevice(placing,w);return}
- if(mode==='connect'){if(k==='dev')connectClick(id,e);else{if(pend){pend=null;$('#gTemp').innerHTML='';render()}else{drag={type:'pan',sx:e.clientX,sy:e.clientY,vx:S.view.x,vy:S.view.y};svg.setPointerCapture(e.pointerId)}}return}
+ if(mode==='connect'){if(k==='dev')connectClick(id,e);else{if(pend){pend=null;$('#gTemp').innerHTML='';render()}else{drag={type:'pan',sx:e.clientX,sy:e.clientY,vx:S.view.x,vy:S.view.y};try{svg.setPointerCapture(e.pointerId)}catch(_){}}}return}
  if(mode==='pdu'){if(k==='dev')pduClick(id);return}
  if(mode==='text'){pushUndo();const t={id:uid('t'),x:snapV(w.x),y:snapV(w.y),text:'Ghi chú',size:14,color:'#1d2733'};S.texts.push(t);setMode('select');select({k:'text',id:t.id});afterChange(true);setTimeout(()=>{const ta=$('#props textarea');if(ta){ta.focus();ta.select()}},50);return}
- if(mode==='zone'){drag={type:'newzone',x0:w.x,y0:w.y};svg.setPointerCapture(e.pointerId);return}
+ if(mode==='zone'){drag={type:'newzone',x0:w.x,y0:w.y};try{svg.setPointerCapture(e.pointerId)}catch(_){}return}
  if(k==='dev'){const d=dev(id);select({k:'dev',id});drag={type:'dev',id,dx:w.x-d.x,dy:w.y-d.y,moved:false,z0:(locZoneAt(d.x,d.y)||{}).id}}
  else if(k==='zh'){select({k:'zone',id});drag={type:'zres',id,moved:false}}
  else if(k==='zhd'){const z=S.zones.find(z=>z.id===id);select({k:'zone',id});drag={type:'zone',id,lx:w.x,ly:w.y,moved:false,inner:S.devices.filter(d=>d.x>=z.x&&d.x<=z.x+z.w&&d.y>=z.y&&d.y<=z.y+z.h).map(d=>d.id),innerT:S.texts.filter(t=>t.x>=z.x&&t.x<=z.x+z.w&&t.y>=z.y&&t.y<=z.y+z.h).map(t=>t.id),innerZ:S.zones.filter(y=>y!==z&&y.x>=z.x&&y.y>=z.y&&y.x+y.w<=z.x+z.w&&y.y+y.h<=z.y+z.h).map(y=>y.id)}}
@@ -668,7 +696,7 @@ svg.addEventListener('pointerdown',e=>{
  else if(k==='text'){const t=S.texts.find(t=>t.id===id);select({k:'text',id});drag={type:'text',id,dx:w.x-t.x,dy:w.y-t.y,moved:false}}
  else if(k==='link'){select({k:'link',id})}
  else{if(sel)select(null);drag={type:'pan',sx:e.clientX,sy:e.clientY,vx:S.view.x,vy:S.view.y}}
- svg.setPointerCapture(e.pointerId)});
+ try{svg.setPointerCapture(e.pointerId)}catch(_){}});
 
 let rafP=false;
 svg.addEventListener('pointermove',e=>{
@@ -679,19 +707,21 @@ svg.addEventListener('pointermove',e=>{
   }
  }
  activeTouches.set(e.pointerId,{x:e.clientX,y:e.clientY});
- if(pinchData&&activeTouches.size===2){
+ if(pinchData&&activeTouches.size>=2){
   const pts=Array.from(activeTouches.values());
+  const r=svg.getBoundingClientRect();
+  const curMidX=(pts[0].x+pts[1].x)/2-r.left;
+  const curMidY=(pts[0].y+pts[1].y)/2-r.top;
   const dist=Math.hypot(pts[1].x-pts[0].x,pts[1].y-pts[0].y)||1;
   const factor=dist/pinchData.dist0;
   const newK=clamp(pinchData.k0*factor,ZMIN,ZMAX);
-  const curMidX=(pts[0].x+pts[1].x)/2;
-  const curMidY=(pts[0].y+pts[1].y)/2;
   S.view.k=newK;
-  S.view.x=curMidX-(pinchData.mid0X-pinchData.vx0)*(newK/pinchData.k0);
-  S.view.y=curMidY-(pinchData.mid0Y-pinchData.vy0)*(newK/pinchData.k0);
+  S.view.x=curMidX-pinchData.wMidX*newK;
+  S.view.y=curMidY-pinchData.wMidY*newK;
   renderView();
   return;
  }
+ if(pinchData)return;
  const w=toW(e);
  if(pend&&mode==='connect'){const d=dev(pend.dev);const C=CABLES[$('#cable').value];$('#gTemp').innerHTML=`<line x1="${d.x}" y1="${d.y}" x2="${w.x}" y2="${w.y}" stroke="${C.color}" stroke-width="2" stroke-dasharray="6 4"/>`}
  if(!drag)return;
@@ -707,8 +737,7 @@ svg.addEventListener('pointermove',e=>{
 
 svg.addEventListener('pointerup',e=>{
  if(lpTimer){clearTimeout(lpTimer);lpTimer=null}
- activeTouches.delete(e.pointerId);
- if(activeTouches.size<2)pinchData=null;
+ cleanTouch(e.pointerId);
  if(!drag)return;const w=toW(e);
  if(drag.type==='newzone'){$('#gTemp').innerHTML='';const W=Math.abs(w.x-drag.x0),H=Math.abs(w.y-drag.y0);if(W>30&&H>30){pushUndo();const z={id:uid('z'),x:snapV(Math.min(w.x,drag.x0)),y:snapV(Math.min(w.y,drag.y0)),w:snapV(W),h:snapV(H),name:'Vùng '+(S.zones.length+1),color:ZCOLORS[S.zones.length%ZCOLORS.length]};S.zones.push(z);setMode('select');select({k:'zone',id:z.id});save()}}
  else if(drag.type==='zone'&&drag.moved){for(const id of drag.inner){const d=dev(id);d.x=snapV(d.x);d.y=snapV(d.y)}for(const id of drag.innerZ||[]){const y=S.zones.find(q=>q.id===id);if(y){y.x=snapV(y.x);y.y=snapV(y.y)}}const z=S.zones.find(z=>z.id===drag.id);z.x=snapV(z.x);z.y=snapV(z.y);render();save()}
@@ -719,8 +748,7 @@ svg.addEventListener('pointerup',e=>{
 
 svg.addEventListener('pointercancel',e=>{
  if(lpTimer){clearTimeout(lpTimer);lpTimer=null}
- activeTouches.delete(e.pointerId);
- if(activeTouches.size<2)pinchData=null;
+ cleanTouch(e.pointerId);
  drag=null});
 
 svg.addEventListener('wheel',e=>{e.preventDefault();const r=svg.getBoundingClientRect();zoomAt(e.clientX-r.left,e.clientY-r.top,Math.exp(-clamp(e.deltaY*(e.deltaMode===1?33:1),-240,240)*0.0017))},{passive:false});
@@ -1975,11 +2003,6 @@ $('#logClr').onclick=()=>$('#logBody').innerHTML='';$('#logMin').onclick=e=>{$('
 $('#logMobClose')?.addEventListener('click',closeLog);
 
 /* Mobile Buttons Wiring */
-$('#mZoomIn').onclick=()=>{const r=svg.getBoundingClientRect();zoomAt(r.width/2,r.height/2,1.25)};
-$('#mZoomOut').onclick=()=>{const r=svg.getBoundingClientRect();zoomAt(r.width/2,r.height/2,0.8)};
-$('#mZoomFit').onclick=fit;
-$('#mZoom100').onclick=zoom100;
-$('#mZoomSel').onclick=zoomSel;
 $('#mobStatusCancel').onclick=()=>setMode('select');
 $('#mobDevCardInfo').onclick=openProps;
 $('#mobDevBtnProps').onclick=openProps;
