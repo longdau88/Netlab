@@ -19,6 +19,10 @@ header input.title{background:#1b3d60;border:1px solid #2c5880;color:#fff;border
 .tb button:hover{background:#265482}
 .tb button.on{background:#3aa0ff;border-color:#3aa0ff;color:#fff}
 .tb select{padding:4px 4px}
+.tb-project{display:flex;gap:3px;padding:0 5px;border-left:1px solid #2c5880}
+.tb-project button{font-weight:600;white-space:nowrap}
+.tb-project #bSave,.btn-save-pri{background:#0b5ea8!important;border-color:#3aa0ff!important;color:#fff!important;box-shadow:0 0 8px rgba(58,160,255,0.35)}
+.tb-project #bSave:hover,.btn-save-pri:hover{background:#084478!important}
 .mob-btn-menu,.mob-header-actions{display:none}
 aside.pal{background:var(--panel);border-right:1px solid var(--line);overflow:auto;padding:8px}
 .pal h4{margin:10px 2px 6px;font-size:11px;text-transform:uppercase;color:var(--muted);letter-spacing:.5px}
@@ -169,18 +173,16 @@ main,#cv,#cv *{touch-action:none}
 
 @media (max-width: 900px){
  #app{display:flex;flex-direction:column;height:100vh;height:100dvh;overflow:hidden;position:relative}
- header{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding:5px 8px;gap:5px;flex:none;z-index:20}
+ header{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding:5px 8px;gap:4px;flex:none;z-index:20}
  header::-webkit-scrollbar{display:none}
  header .logo{font-size:14px;margin-right:2px}
- header input.title{min-width:85px;max-width:130px;flex:none;font-size:12.5px;padding:3px 6px}
+ header input.title{min-width:70px;max-width:115px;width:90px;flex:none;font-size:12px;padding:3px 6px}
  .tb{padding:0 3px;flex:none}
  .tb button,.tb select{padding:4px 7px;font-size:11.5px;min-height:30px}
- .mob-header-actions{display:flex!important;align-items:center;gap:3px;margin-left:auto;margin-right:2px;flex:none}
- .mob-hdr-btn{background:#1b3d60;border:1px solid #2c5880;color:#fff;border-radius:6px;padding:3px 7px;font-size:11.5px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:3px;height:30px;touch-action:manipulation;white-space:nowrap}
- .mob-hdr-btn:active{background:#265482}
- .mob-hdr-btn.pri{background:#0b5ea8;border-color:#3aa0ff;color:#fff;box-shadow:0 0 8px rgba(58,160,255,0.35)}
- .mob-hdr-btn.pri:active{background:#084478}
- .mob-btn-menu{display:flex!important;align-items:center;justify-content:center;background:#1b3d60;border:1px solid #2c5880;color:#fff;border-radius:6px;width:30px;height:30px;font-size:16px;cursor:pointer;flex:none;margin-left:2px}
+ .tb-project{display:flex!important;padding:0 2px;border-left:none;flex:none;gap:3px}
+ .tb-project button{padding:4px 7px;font-size:11.5px;min-height:30px;touch-action:manipulation}
+ .mob-header-actions{display:none!important}
+ .mob-btn-menu{display:flex!important;align-items:center;justify-content:center;background:#1b3d60;border:1px solid #2c5880;color:#fff;border-radius:6px;width:30px;height:30px;font-size:16px;cursor:pointer;flex:none;margin-left:auto;position:sticky;right:4px;z-index:5}
  main{flex:1;width:100%;height:100%;position:relative;overflow:hidden}
  aside.pal{position:fixed;top:0;left:0;bottom:0;width:min(340px,86vw);z-index:105;transform:translateX(-105%);transition:transform .26s cubic-bezier(0.16,1,0.3,1);box-shadow:4px 0 26px rgba(0,0,0,0.25);background:var(--panel);border-right:1px solid var(--line);padding:10px;overflow-y:auto;-webkit-overflow-scrolling:touch}
  aside.pal.mob-open{transform:translateX(0)}
@@ -215,6 +217,8 @@ main,#cv,#cv *{touch-action:none}
 }
 
 @media (max-width: 600px){
+ header input.title{width:80px;min-width:65px;max-width:95px;font-size:11.5px;padding:3px 4px}
+ .tb-project button{padding:3px 5px;font-size:11px}
  .pal-grid{grid-template-columns:1fr 1fr 1fr}
  .row{grid-template-columns:1fr;gap:3px;margin:7px 0}
  .row label{font-weight:600;font-size:11.5px}
@@ -245,9 +249,10 @@ main,#cv,#cv *{touch-action:none}
 <header>
   <div class="logo"><i></i>NetLab</div>
   <input class="title" id="title" title="Tên sơ đồ">
-  <div class="mob-header-actions">
-    <button id="bMobProject" class="mob-hdr-btn" title="Quản lý dự án (.netlab)">📁 Dự án</button>
-    <button id="bMobSave" class="mob-hdr-btn pri" title="Lưu / Chia sẻ file .netlab">💾 Lưu</button>
+  <div class="tb tb-project">
+    <button id="bNew" title="Tạo dự án mới (Ctrl+N)">📄 Mới</button>
+    <button id="bOpen" title="Mở file dự án .netlab / .json (Ctrl+O)">📂 Mở…</button>
+    <button id="bSave" class="btn-save-pri" title="Lưu dự án thành file .netlab (Ctrl+S)">💾 Lưu</button>
   </div>
   <button id="bMobMenu" class="mob-btn-menu" title="Menu chức năng" aria-label="Menu">☰</button>
   <div class="tb">
@@ -284,15 +289,12 @@ main,#cv,#cv *{touch-action:none}
     <button id="bList" title="Danh sách quản lý: hostname, IP, cổng, tài khoản, MAC, serial, tem an ninh / an toàn">📋 Danh sách QL</button>
   </div>
   <div class="tb">
-    <button id="bNew" title="Tạo dự án mới (Ctrl+N)">📄 Mới</button>
-    <button id="bOpen" title="Mở file dự án .netlab / .json (Ctrl+O)">📂 Mở…</button>
-    <button id="bSave" title="Lưu dự án thành file .netlab (Ctrl+S)">💾 Lưu</button>
     <button id="bPng" title="Xuất ảnh PNG">Xuất PNG</button>
     <button id="bSvg" title="Xuất đồ họa vector SVG">Xuất SVG</button>
     <button id="bDemo" title="Nạp sơ đồ mẫu doanh nghiệp">Mẫu</button>
     <button id="bHelp" title="Hướng dẫn sử dụng">?</button>
   </div>
-  <input type="file" id="fileIn" accept=".netlab,.json,application/json,text/plain" class="hidden">
+  <input type="file" id="fileIn" class="hidden">
 </header>
 
 <aside class="pal" id="pal"></aside>
@@ -1971,7 +1973,7 @@ function openMobMenu(){
    items:[
     {label:'Quản lý dự án',icon:'📁',fn:()=>projectModal()},
     {label:'Lưu / Gửi file (.netlab)',icon:'💾',fn:()=>saveProject(false)},
-    {label:'Mở file dự án',icon:'📂',fn:()=>$('#fileIn').click()},
+    {label:'Mở file dự án',icon:'📂',fn:()=>triggerFileOpen()},
     {label:'Tạo dự án mới',icon:'📄',fn:()=>newProjectDialog()},
     {label:'Xuất ảnh PNG',icon:'🖼',fn:()=>exportPng()},
     {label:'Xuất đồ họa SVG',icon:'📐',fn:()=>$('#bSvg').click()}
@@ -2141,7 +2143,7 @@ function projectModal(){
  };
  box.querySelector('#pOpenBtn').onclick=()=>{
   closeModal();
-  $('#fileIn').click();
+  triggerFileOpen();
  };
  box.querySelector('#pNewBtn').onclick=()=>{
   closeModal();
@@ -2297,7 +2299,23 @@ $('#bCheck').onclick=validate;$('#siteJump').onchange=e=>{const v=e.target.value
 $('#bNew').onclick=()=>newProjectDialog();
 $('#bDemo').onclick=()=>{if(S.devices.length&&!confirm('Nạp sơ đồ mẫu? Sơ đồ hiện tại sẽ bị thay thế (vẫn có thể Hoàn tác).'))return;pushUndo();demo();sel=null;for(const k in sessions)delete sessions[k];afterChange(true);fit();log('Đã nạp sơ đồ mẫu','ok')};
 $('#bSave').onclick=()=>saveProject();
-$('#bOpen').onclick=()=>$('#fileIn').click();
+function triggerFileOpen(){
+ const fi=$('#fileIn');
+ const isMobile=/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)||('ontouchstart' in window);
+ if(isMobile){
+  fi.removeAttribute('accept');
+ }else{
+  fi.setAttribute('accept','.netlab,.json,application/json,text/plain');
+ }
+ fi.value='';
+ fi.click();
+}
+$('#bOpen').onclick=triggerFileOpen;
+$('#fileIn').addEventListener('click',()=>{
+ const isMobile=/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)||('ontouchstart' in window);
+ if(isMobile)$('#fileIn').removeAttribute('accept');
+ else $('#fileIn').setAttribute('accept','.netlab,.json,application/json,text/plain');
+});
 $('#fileIn').onchange=e=>{const f=e.target.files[0];if(!f)return;openProjectFile(f);e.target.value=''};
 $('#bPng').onclick=exportPng;$('#bSvg').onclick=()=>{const r=exportSvgText();if(!r)return log('Sơ đồ trống','warn');download(fname('.svg'),r.txt,'image/svg+xml');log('Đã xuất SVG','ok')};
 $('#title').addEventListener('change',e=>{pushUndo();S.title=e.target.value;save();renderProps()});
@@ -2332,7 +2350,7 @@ document.addEventListener('keydown',e=>{
   else if(k==='y'){e.preventDefault();redo()}
   else if(k==='d'){e.preventDefault();if(sel&&sel.k==='dev')duplicate(dev(sel.id))}
   else if(k==='s'){e.preventDefault();saveProject()}
-  else if(k==='o'){e.preventDefault();$('#fileIn').click()}
+  else if(k==='o'){e.preventDefault();triggerFileOpen()}
   else if(k==='n'){e.preventDefault();newProjectDialog()}
   return
  }
