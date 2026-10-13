@@ -459,7 +459,7 @@ const isSig=n=>/^(Sig|Ai|Rs|Di)\d/.test(n);
 const isAux=n=>/^(Ant|Usb)\d/.test(n);
 
 /* ================= State ================= */
-const KEY='netlab.kho.v14';
+const KEY='netlab.project.v2';
 let S=null,undoS=[],redoS=[],sel=null,mode='select',placing=null,pend=null,pduSrc=null,drag=null;
 const opt={ip:true,ports:true,grid:true,snap:true,showPw:false,usedOnly:false,autoLink:true,hideG:{}};
 function blank(){return {title:'Sơ đồ mạng mới',devices:[],links:[],zones:[],texts:[],view:{x:40,y:20,k:1},plan:buildPlan(),genWarn:[]}}
@@ -2343,12 +2343,29 @@ window.addEventListener('resize',()=>{render();updateMobNav();if(window.innerWid
 
 /* ================= Boot ================= */
 try{const o=JSON.parse(localStorage.getItem(KEY+'.opt')||'null');if(o)Object.assign(opt,o)}catch(e){}
-let restored=false;try{const raw=localStorage.getItem(KEY);if(raw){loadData(JSON.parse(raw));restored=true}}catch(e){restored=false}
-if(!restored)S=blank();
+let restored=false;
+try{
+ const raw=localStorage.getItem(KEY);
+ if(raw){
+  loadData(JSON.parse(raw));
+  restored=true;
+ }
+}catch(e){restored=false}
+
+if(!restored){
+ S=blank();
+ S.title='Sơ đồ mạng mới';
+}
 if(!opt.hideG)opt.hideG={};
 buildPalette();setMode('select');renderProps();
-if(!restored){generate('all',GEN_DEF);undoS=[];setTimeout(fit,30);log('Đã tự sinh sơ đồ toàn hệ thống 4 phân khu (L1 Sở chỉ huy · L2 Lạc Thủy · L3 Đoài Phương · L4 Lữ đoàn 86). Dùng ô "⌖ Tới điểm" trên thanh công cụ để phóng tới từng phân khu.','ok')}
-else log('Đã khôi phục sơ đồ đã lưu trong trình duyệt','ok');
+if(!restored){
+ undoS=[];
+ setTimeout(fit,30);
+ log('Chào mừng bạn đến với NetLab! Dự án mới (trống) đã sẵn sàng. Hãy kéo thả thiết bị để vẽ hoặc bấm "Mở" để nạp file (.netlab).','info');
+}else{
+ setTimeout(fit,30);
+ log(`Đã khôi phục dự án đang làm: "${S.title||'Sơ đồ mạng'}" (${S.devices.length} thiết bị, ${S.links.length} kết nối)`,'ok');
+}
 fillJump();
 updateMobNav();
 </script>
